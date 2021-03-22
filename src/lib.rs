@@ -9,6 +9,9 @@ pub enum Error {
     #[error("{0}")]
     Message(String),
 
+    #[error("cannot borrow deserialized data from NestedMeta")]
+    BorrowingNotSupported,
+
     #[error("unexepected end of input")]
     EOF,
 
@@ -26,6 +29,9 @@ pub enum Error {
 
     #[error("expected an integer value")]
     ExpectedInteger,
+
+    #[error("expected a string")]
+    ExpectedString,
 }
 
 impl ser::Error for Error {
@@ -115,6 +121,16 @@ impl<'a> Deserializer<'a> {
             Ok(value)
         } else {
             Err(Error::ExpectedChar)
+        }
+    }
+
+    fn parse_string(&mut self) -> Result<String> {
+        if let syn::NestedMeta::Lit(syn::Lit::Str(s)) = self.peek_meta()? {
+            let value = s.value();
+            self.pop_next()?;
+            Ok(value)
+        } else {
+            Err(Error::ExpectedString)
         }
     }
 }
@@ -246,14 +262,14 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        todo!("str")
+        Err(Error::BorrowingNotSupported)
     }
 
-    fn deserialize_string<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_string<V>(self, visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!("string")
+        visitor.visit_string(self.parse_string()?)
     }
 
     fn deserialize_bytes<V>(self, _visitor: V) -> Result<V::Value>
@@ -438,5 +454,12 @@ mod tests {
     fn characters() {
         assert_meta_eq!('a' => char, ['a']);
         assert_meta_eq!('z' => char, ['z']);
+    }
+
+    #[test]
+    fn strings() {
+        // TODO: fails, can this be fixed?
+        // assert_meta_eq!("abcde" => &str, ["abcde"]);
+        assert_meta_eq!("abcde" => String, ["abcde"]);
     }
 }
