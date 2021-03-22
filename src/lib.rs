@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, str::FromStr};
 
 use serde::{de, ser, Deserialize};
 
@@ -17,6 +17,9 @@ pub enum Error {
 
     #[error("expected a boolean value")]
     ExpectedBoolean,
+
+    #[error("expected an integer value")]
+    ExpectedInteger,
 }
 
 impl ser::Error for Error {
@@ -59,6 +62,16 @@ impl<'a> Deserializer<'a> {
             Err(Error::ExpectedBoolean)
         }
     }
+
+    fn parse_integer<N>(&mut self) -> Result<N>
+    where
+        N: FromStr,
+        N::Err: Display,
+    {
+        if let syn::NestedMeta::Lit(syn::Lit::Int(i)) = self.next_meta()? {
+            i.base10_parse().map_err(|_| Error::ExpectedInteger)
+        } else {
+            Err(Error::ExpectedInteger)
         }
     }
 }
@@ -109,11 +122,11 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         visitor.visit_bool(self.parse_bool()?)
     }
 
-    fn deserialize_i8<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!("i8")
+        visitor.visit_i8(self.parse_integer()?)
     }
 
     fn deserialize_i16<V>(self, _visitor: V) -> Result<V::Value>
@@ -137,11 +150,11 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         todo!("i64")
     }
 
-    fn deserialize_u8<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!("u8")
+        visitor.visit_u8(self.parse_integer()?)
     }
 
     fn deserialize_u16<V>(self, _visitor: V) -> Result<V::Value>
@@ -356,5 +369,11 @@ mod tests {
     fn booleans() {
         assert_eq!(true, from_test_meta![true]);
         assert_eq!(false, from_test_meta![false]);
+    }
+
+    #[test]
+    fn numbers() {
+        assert_eq!(10_u8, from_test_meta![10]);
+        assert_eq!(-7_i8, from_test_meta![-7]);
     }
 }
