@@ -1,4 +1,4 @@
-use std::{fmt::Display, str::FromStr};
+use std::{fmt, str::FromStr};
 
 use serde::{de, ser, Deserialize};
 
@@ -35,19 +35,20 @@ pub enum Error {
 }
 
 impl ser::Error for Error {
-    fn custom<T: Display>(msg: T) -> Self {
+    fn custom<T: fmt::Display>(msg: T) -> Self {
         Error::Message(msg.to_string())
     }
 }
 
 impl de::Error for Error {
-    fn custom<T: Display>(msg: T) -> Self {
+    fn custom<T: fmt::Display>(msg: T) -> Self {
         Error::Message(msg.to_string())
     }
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+#[derive(Debug)]
 pub struct Deserializer<'a> {
     meta: &'a [syn::NestedMeta],
     pos: usize,
@@ -89,7 +90,7 @@ impl<'a> Deserializer<'a> {
     fn parse_integer<N>(&mut self) -> Result<N>
     where
         N: FromStr,
-        N::Err: Display,
+        N::Err: fmt::Display,
     {
         if let syn::NestedMeta::Lit(syn::Lit::Int(i)) = self.peek_meta()? {
             let value: N = i.base10_parse().map_err(|_| Error::ExpectedInteger)?;
@@ -103,7 +104,7 @@ impl<'a> Deserializer<'a> {
     fn parse_float<N>(&mut self) -> Result<N>
     where
         N: FromStr,
-        N::Err: Display,
+        N::Err: fmt::Display,
     {
         if let syn::NestedMeta::Lit(syn::Lit::Float(f)) = self.peek_meta()? {
             let value: N = f.base10_parse().map_err(|_| Error::ExpectedFloat)?;
@@ -388,24 +389,9 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
 
 #[cfg(test)]
 mod tests {
-    use std::fmt;
-
     use super::*;
 
-    use quote::ToTokens;
-
     struct AttributeArgs(Vec<syn::NestedMeta>);
-
-    impl fmt::Debug for AttributeArgs {
-        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            let entries = self
-                .0
-                .iter()
-                .map(|nm| nm.to_token_stream())
-                .collect::<Vec<_>>();
-            f.debug_list().entries(&entries).finish()
-        }
-    }
 
     impl syn::parse::Parse for AttributeArgs {
         fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {

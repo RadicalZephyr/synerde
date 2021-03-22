@@ -8,6 +8,6 @@ edition = "2018"
 
 [dependencies]
 serde = "1.0.124"
-syn = "1.0.64"
+syn = { version = "1.0.64", features = ["extra-traits"] }
 thiserror = "1.0.24"
 quote = "1.0.9"
