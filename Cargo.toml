@@ -11,3 +11,6 @@ serde = "1.0.124"
 syn = { version = "1.0.64", features = ["extra-traits"] }
 thiserror = "1.0.24"
 quote = "1.0.9"
+
+[dev-dependencies]
+serde_derive = "1.0.124"

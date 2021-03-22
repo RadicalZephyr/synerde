@@ -320,11 +320,11 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         todo!("unit_struct")
     }
 
-    fn deserialize_newtype_struct<V>(self, _name: &'static str, _visitor: V) -> Result<V::Value>
+    fn deserialize_newtype_struct<V>(self, _name: &'static str, visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!("newtype_struct")
+        visitor.visit_newtype_struct(self)
     }
 
     fn deserialize_seq<V>(self, _visitor: V) -> Result<V::Value>
@@ -459,5 +459,12 @@ mod tests {
         // TODO: fails, can this be fixed?
         // assert_meta_eq!("abcde" => &str, ["abcde"]);
         assert_meta_eq!("abcde" => String, ["abcde"]);
+    }
+
+    #[test]
+    fn newtype_struct() {
+        #[derive(Debug, PartialEq, serde_derive::Deserialize)]
+        struct Wrap<T>(T);
+        assert_meta_eq!(Wrap(0) => Wrap<u8>, [0]);
     }
 }
