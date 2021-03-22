@@ -342,9 +342,12 @@ mod tests {
     }
 
     #[test]
-    fn it_works() {
+    fn booleans() {
         let AttributeArgs(args) = syn::parse_quote![true];
         let actual: bool = from_nested_meta(&args).expect("failed to parse");
         assert_eq!(true, actual);
+        let AttributeArgs(args) = syn::parse_quote![false];
+        let actual: bool = from_nested_meta(&args).expect("failed to parse");
+        assert_eq!(false, actual);
     }
 }
