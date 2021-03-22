@@ -44,11 +44,20 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 pub struct Deserializer<'a> {
     meta: &'a [syn::NestedMeta],
+    pos: usize,
 }
 
 impl<'a> Deserializer<'a> {
+    pub fn new(meta: &'a [syn::NestedMeta]) -> Self {
+        Self { meta, pos: 0 }
+    }
+
+    fn is_complete(&self) -> bool {
+        self.meta.len() == self.pos
+    }
+
     fn peek_meta(&mut self) -> Result<&syn::NestedMeta> {
-        if let Some(next_meta) = self.meta.first() {
+        if let Some(next_meta) = self.meta[self.pos..].first() {
             Ok(next_meta)
         } else {
             Err(Error::EOF)
@@ -56,7 +65,7 @@ impl<'a> Deserializer<'a> {
     }
 
     fn pop_next(&mut self) -> Result<()> {
-        self.meta = &self.meta[1..];
+        self.pos += 1;
         Ok(())
     }
 
@@ -114,9 +123,9 @@ pub fn from_nested_meta<'a, T>(meta: &'a [syn::NestedMeta]) -> Result<T>
 where
     T: Deserialize<'a>,
 {
-    let mut deserializer = Deserializer { meta };
+    let mut deserializer = Deserializer::new(meta);
     let t = T::deserialize(&mut deserializer)?;
-    if deserializer.meta.is_empty() {
+    if deserializer.is_complete() {
         Ok(t)
     } else {
         return Err(Error::TrailingItems);
