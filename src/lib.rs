@@ -392,40 +392,42 @@ mod tests {
         }
     }
 
-    macro_rules! from_test_meta {
-        [$( $t:tt )*] => {{
+    macro_rules! assert_meta_eq {
+        [$expected:expr => $ty:ty , [$( $t:tt )*]] => {{
             let AttributeArgs(args) = syn::parse_quote![$($t)*];
-            from_nested_meta(&args).expect("failed to parse")
+            let expected = $expected;
+            let actual = from_nested_meta::<$ty>(&args).expect("failed to parse");
+            assert_eq!(expected, actual, "expected: {:?}\nactual: {:?}", expected, actual);
         }};
     }
 
     #[test]
     fn booleans() {
-        assert_eq!(true, from_test_meta![true]);
-        assert_eq!(false, from_test_meta![false]);
+        assert_meta_eq!(true => bool, [true]);
+        assert_meta_eq!(false => bool, [false]);
     }
 
     #[test]
     fn integers() {
-        assert_eq!(10_u8, from_test_meta![10]);
-        assert_eq!(-7_i8, from_test_meta![-7]);
-        assert_eq!(110_u16, from_test_meta![110]);
-        assert_eq!(-17_i16, from_test_meta![-17]);
-        assert_eq!(101_u32, from_test_meta![101]);
-        assert_eq!(-71_i32, from_test_meta![-71]);
-        assert_eq!(9101_u64, from_test_meta![9101]);
-        assert_eq!(-471_i64, from_test_meta![-471]);
+        assert_meta_eq!(10 => u8, [10]);
+        assert_meta_eq!(-7 => i8, [-7]);
+        assert_meta_eq!(110 => u16, [110]);
+        assert_meta_eq!(-17 => i16, [-17]);
+        assert_meta_eq!(101 => u32, [101]);
+        assert_meta_eq!(-71 => i32, [-71]);
+        assert_meta_eq!(9101 => u64, [9101]);
+        assert_meta_eq!(-471 => i64, [-471]);
     }
 
     #[test]
     fn floats() {
-        assert_eq!(10.0_f32, from_test_meta![10.0_f32]);
-        assert_eq!(1000.0_f64, from_test_meta![1000.0_f32]);
+        assert_meta_eq!(10.0 => f32, [10.0_f32]);
+        assert_meta_eq!(1000.0 => f64, [1000.0_f32]);
     }
 
     #[test]
     fn characters() {
-        assert_eq!('a', from_test_meta!['a']);
-        assert_eq!('z', from_test_meta!['z']);
+        assert_meta_eq!('a' => char, ['a']);
+        assert_meta_eq!('z' => char, ['z']);
     }
 }
