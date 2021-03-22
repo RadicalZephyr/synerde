@@ -21,6 +21,9 @@ pub enum Error {
     #[error("expected a boolean value")]
     ExpectedBoolean,
 
+    #[error("expected a byte string")]
+    ExpectedBytes,
+
     #[error("expected a character value")]
     ExpectedChar,
 
@@ -134,6 +137,15 @@ impl<'a> Deserializer<'a> {
             Err(Error::ExpectedString)
         }
     }
+
+    fn parse_byte_buf(&mut self) -> Result<Vec<u8>> {
+        if let syn::NestedMeta::Lit(syn::Lit::ByteStr(bs)) = self.peek_meta()? {
+            let value = bs.value();
+            Ok(value)
+        } else {
+            Err(Error::ExpectedBytes)
+        }
+    }
 }
 
 pub fn from_nested_meta<'a, T>(meta: &'a [syn::NestedMeta]) -> Result<T>
@@ -164,7 +176,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
             },
             syn::NestedMeta::Lit(l) => match l {
                 syn::Lit::Str(_) => self.deserialize_string(visitor),
-                syn::Lit::ByteStr(_) => self.deserialize_bytes(visitor),
+                syn::Lit::ByteStr(_) => self.deserialize_byte_buf(visitor),
                 syn::Lit::Byte(_) => self.deserialize_u8(visitor),
                 syn::Lit::Char(_) => self.deserialize_char(visitor),
                 syn::Lit::Int(_) => self.deserialize_i64(visitor),
@@ -277,14 +289,14 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        todo!("bytes")
+        Err(Error::BorrowingNotSupported)
     }
 
-    fn deserialize_byte_buf<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!("byte_buf")
+        visitor.visit_byte_buf(self.parse_byte_buf()?)
     }
 
     fn deserialize_option<V>(self, _visitor: V) -> Result<V::Value>
