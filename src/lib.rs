@@ -46,14 +46,19 @@ impl<'a> Deserializer<'a> {
         }
     }
 
+    fn next_meta(&mut self) -> Result<syn::NestedMeta> {
+        let next = self.peek_meta()?.clone();
+        self.meta = &self.meta[1..];
+        Ok(next)
+    }
+
     fn parse_bool(&mut self) -> Result<bool> {
-        match self.peek_meta()? {
-            syn::NestedMeta::Lit(syn::Lit::Bool(v)) => {
-                let value = v.value;
-                self.meta = &self.meta[1..];
-                Ok(value)
-            }
-            _ => Err(Error::ExpectedBoolean),
+        if let syn::NestedMeta::Lit(syn::Lit::Bool(v)) = self.next_meta()? {
+            Ok(v.value)
+        } else {
+            Err(Error::ExpectedBoolean)
+        }
+    }
         }
     }
 }
