@@ -18,6 +18,9 @@ pub enum Error {
     #[error("expected a boolean value")]
     ExpectedBoolean,
 
+    #[error("expected a floating point value")]
+    ExpectedFloat,
+
     #[error("expected an integer value")]
     ExpectedInteger,
 }
@@ -76,6 +79,20 @@ impl<'a> Deserializer<'a> {
             Ok(value)
         } else {
             Err(Error::ExpectedInteger)
+        }
+    }
+
+    fn parse_float<N>(&mut self) -> Result<N>
+    where
+        N: FromStr,
+        N::Err: Display,
+    {
+        if let syn::NestedMeta::Lit(syn::Lit::Float(f)) = self.peek_meta()? {
+            let value: N = f.base10_parse().map_err(|_| Error::ExpectedFloat)?;
+            self.pop_next()?;
+            Ok(value)
+        } else {
+            Err(Error::ExpectedFloat)
         }
     }
 }
@@ -182,18 +199,18 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         visitor.visit_u64(self.parse_integer()?)
     }
 
-    fn deserialize_f32<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!("f32")
+        visitor.visit_f32(self.parse_float()?)
     }
 
-    fn deserialize_f64<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!("f64")
+        visitor.visit_f64(self.parse_float()?)
     }
 
     fn deserialize_char<V>(self, _visitor: V) -> Result<V::Value>
@@ -376,7 +393,7 @@ mod tests {
     }
 
     #[test]
-    fn numbers() {
+    fn integers() {
         assert_eq!(10_u8, from_test_meta![10]);
         assert_eq!(-7_i8, from_test_meta![-7]);
         assert_eq!(110_u16, from_test_meta![110]);
@@ -385,5 +402,11 @@ mod tests {
         assert_eq!(-71_i32, from_test_meta![-71]);
         assert_eq!(9101_u64, from_test_meta![9101]);
         assert_eq!(-471_i64, from_test_meta![-471]);
+    }
+
+    #[test]
+    fn floats() {
+        assert_eq!(10.0_f32, from_test_meta![10.0_f32]);
+        assert_eq!(1000.0_f64, from_test_meta![1000.0_f32]);
     }
 }
