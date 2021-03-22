@@ -310,7 +310,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        todo!("unit")
+        unimplemented!("deserializing unit")
     }
 
     fn deserialize_unit_struct<V>(self, _name: &'static str, _visitor: V) -> Result<V::Value>
@@ -476,5 +476,12 @@ mod tests {
         #[derive(Debug, PartialEq, serde_derive::Deserialize)]
         struct Wrap<T>(T);
         assert_meta_eq!(Wrap(0) => Wrap<u8>, [0]);
+    }
+
+    // NestedMeta won't parse a single unit value
+    #[ignore]
+    #[test]
+    fn unit() {
+        assert_meta_eq!(() => (), [()]);
     }
 }
