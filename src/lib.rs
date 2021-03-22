@@ -108,147 +108,147 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("i8")
     }
 
     fn deserialize_i16<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("i16")
     }
 
     fn deserialize_i32<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("i32")
     }
 
     fn deserialize_i64<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("i64")
     }
 
     fn deserialize_u8<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("u8")
     }
 
     fn deserialize_u16<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("u16")
     }
 
     fn deserialize_u32<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("u32")
     }
 
     fn deserialize_u64<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("u64")
     }
 
     fn deserialize_f32<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("f32")
     }
 
     fn deserialize_f64<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("f64")
     }
 
     fn deserialize_char<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("char")
     }
 
     fn deserialize_str<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("str")
     }
 
     fn deserialize_string<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("string")
     }
 
     fn deserialize_bytes<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("bytes")
     }
 
     fn deserialize_byte_buf<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("byte_buf")
     }
 
     fn deserialize_option<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("option")
     }
 
     fn deserialize_unit<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("unit")
     }
 
     fn deserialize_unit_struct<V>(self, _name: &'static str, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("unit_struct")
     }
 
     fn deserialize_newtype_struct<V>(self, _name: &'static str, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("newtype_struct")
     }
 
     fn deserialize_seq<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("seq")
     }
 
     fn deserialize_tuple<V>(self, _len: usize, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("tuple")
     }
 
     fn deserialize_tuple_struct<V>(
@@ -260,14 +260,14 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("tuple_struct")
     }
 
     fn deserialize_map<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("map")
     }
 
     fn deserialize_struct<V>(
@@ -279,7 +279,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("struct")
     }
 
     fn deserialize_enum<V>(
@@ -291,22 +291,21 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("enum")
     }
 
     fn deserialize_identifier<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        println!("what the fuck");
-        todo!()
+        todo!("identifier")
     }
 
     fn deserialize_ignored_any<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        todo!("ignored_any")
     }
 }
 
