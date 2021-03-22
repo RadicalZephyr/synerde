@@ -18,6 +18,9 @@ pub enum Error {
     #[error("expected a boolean value")]
     ExpectedBoolean,
 
+    #[error("expected a character value")]
+    ExpectedChar,
+
     #[error("expected a floating point value")]
     ExpectedFloat,
 
@@ -93,6 +96,16 @@ impl<'a> Deserializer<'a> {
             Ok(value)
         } else {
             Err(Error::ExpectedFloat)
+        }
+    }
+
+    fn parse_char(&mut self) -> Result<char> {
+        if let syn::NestedMeta::Lit(syn::Lit::Char(c)) = self.peek_meta()? {
+            let value = c.value();
+            self.pop_next()?;
+            Ok(value)
+        } else {
+            Err(Error::ExpectedChar)
         }
     }
 }
@@ -213,11 +226,11 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         visitor.visit_f64(self.parse_float()?)
     }
 
-    fn deserialize_char<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_char<V>(self, visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!("char")
+        visitor.visit_char(self.parse_char()?)
     }
 
     fn deserialize_str<V>(self, _visitor: V) -> Result<V::Value>
@@ -408,5 +421,11 @@ mod tests {
     fn floats() {
         assert_eq!(10.0_f32, from_test_meta![10.0_f32]);
         assert_eq!(1000.0_f64, from_test_meta![1000.0_f32]);
+    }
+
+    #[test]
+    fn characters() {
+        assert_eq!('a', from_test_meta!['a']);
+        assert_eq!('z', from_test_meta!['z']);
     }
 }
