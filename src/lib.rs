@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use serde::{de, ser};
+use serde::{de, ser, Deserialize};
 
 use thiserror::Error;
 
@@ -11,6 +11,12 @@ pub enum Error {
 
     #[error("unexepected end of input")]
     EOF,
+
+    #[error("unparsed content found at end of input")]
+    TrailingItems,
+
+    #[error("expected a boolean value")]
+    ExpectedBoolean,
 }
 
 impl ser::Error for Error {
@@ -31,6 +37,40 @@ pub struct Deserializer<'a> {
     meta: &'a [syn::NestedMeta],
 }
 
+impl<'a> Deserializer<'a> {
+    fn peek_meta(&mut self) -> Result<&syn::NestedMeta> {
+        if let Some(next_meta) = self.meta.first() {
+            Ok(next_meta)
+        } else {
+            Err(Error::EOF)
+        }
+    }
+
+    fn parse_bool(&mut self) -> Result<bool> {
+        match self.peek_meta()? {
+            syn::NestedMeta::Lit(syn::Lit::Bool(v)) => {
+                let value = v.value;
+                self.meta = &self.meta[1..];
+                Ok(value)
+            }
+            _ => Err(Error::ExpectedBoolean),
+        }
+    }
+}
+
+pub fn from_nested_meta<'a, T>(meta: &'a [syn::NestedMeta]) -> Result<T>
+where
+    T: Deserialize<'a>,
+{
+    let mut deserializer = Deserializer { meta };
+    let t = T::deserialize(&mut deserializer)?;
+    if deserializer.meta.is_empty() {
+        Ok(t)
+    } else {
+        return Err(Error::TrailingItems);
+    }
+}
+
 impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     type Error = Error;
 
@@ -38,34 +78,30 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        if let Some(next_meta) = self.meta.first() {
-            match next_meta {
-                syn::NestedMeta::Meta(m) => match m {
-                    syn::Meta::Path(_) => self.deserialize_seq(visitor),
-                    syn::Meta::List(_) => self.deserialize_seq(visitor),
-                    syn::Meta::NameValue(_) => self.deserialize_identifier(visitor),
-                },
-                syn::NestedMeta::Lit(l) => match l {
-                    syn::Lit::Str(_) => self.deserialize_string(visitor),
-                    syn::Lit::ByteStr(_) => self.deserialize_bytes(visitor),
-                    syn::Lit::Byte(_) => self.deserialize_u8(visitor),
-                    syn::Lit::Char(_) => self.deserialize_char(visitor),
-                    syn::Lit::Int(_) => self.deserialize_i64(visitor),
-                    syn::Lit::Float(_) => self.deserialize_f64(visitor),
-                    syn::Lit::Bool(_) => self.deserialize_bool(visitor),
-                    syn::Lit::Verbatim(_) => todo!(),
-                },
-            }
-        } else {
-            Err(Error::EOF)
+        match self.peek_meta()? {
+            syn::NestedMeta::Meta(m) => match m {
+                syn::Meta::Path(_) => self.deserialize_seq(visitor),
+                syn::Meta::List(_) => self.deserialize_seq(visitor),
+                syn::Meta::NameValue(_) => self.deserialize_identifier(visitor),
+            },
+            syn::NestedMeta::Lit(l) => match l {
+                syn::Lit::Str(_) => self.deserialize_string(visitor),
+                syn::Lit::ByteStr(_) => self.deserialize_bytes(visitor),
+                syn::Lit::Byte(_) => self.deserialize_u8(visitor),
+                syn::Lit::Char(_) => self.deserialize_char(visitor),
+                syn::Lit::Int(_) => self.deserialize_i64(visitor),
+                syn::Lit::Float(_) => self.deserialize_f64(visitor),
+                syn::Lit::Bool(_) => self.deserialize_bool(visitor),
+                syn::Lit::Verbatim(_) => todo!(),
+            },
         }
     }
 
-    fn deserialize_bool<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        visitor.visit_bool(self.parse_bool()?)
     }
 
     fn deserialize_i8<V>(self, _visitor: V) -> Result<V::Value>
@@ -262,6 +298,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
+        println!("what the fuck");
         todo!()
     }
 
@@ -275,8 +312,39 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
 
 #[cfg(test)]
 mod tests {
+    use std::fmt;
+
+    use super::*;
+
+    use quote::ToTokens;
+
+    struct AttributeArgs(Vec<syn::NestedMeta>);
+
+    impl fmt::Debug for AttributeArgs {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let entries = self
+                .0
+                .iter()
+                .map(|nm| nm.to_token_stream())
+                .collect::<Vec<_>>();
+            f.debug_list().entries(&entries).finish()
+        }
+    }
+
+    impl syn::parse::Parse for AttributeArgs {
+        fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+            let mut all_meta = Vec::new();
+            while let Ok(next_meta) = input.parse::<syn::NestedMeta>() {
+                all_meta.push(next_meta);
+            }
+            Ok(Self(all_meta))
+        }
+    }
+
     #[test]
     fn it_works() {
-        assert_eq!(2 + 2, 4);
+        let AttributeArgs(args) = syn::parse_quote![true];
+        let actual: bool = from_nested_meta(&args).expect("failed to parse");
+        assert_eq!(true, actual);
     }
 }
