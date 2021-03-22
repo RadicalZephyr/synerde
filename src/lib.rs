@@ -4,6 +4,33 @@ use serde::{de, ser, Deserialize};
 
 use thiserror::Error;
 
+pub type Result<T> = std::result::Result<T, Error>;
+
+impl ser::Error for Error {
+    fn custom<T: fmt::Display>(msg: T) -> Self {
+        Error::Message(msg.to_string())
+    }
+}
+
+impl de::Error for Error {
+    fn custom<T: fmt::Display>(msg: T) -> Self {
+        Error::Message(msg.to_string())
+    }
+}
+
+pub fn from_nested_meta<'a, T>(meta: &'a [syn::NestedMeta]) -> Result<T>
+where
+    T: Deserialize<'a>,
+{
+    let mut deserializer = dbg!(Deserializer::new(meta));
+    let t = T::deserialize(&mut deserializer)?;
+    if deserializer.is_complete() {
+        Ok(t)
+    } else {
+        return Err(Error::TrailingItems);
+    }
+}
+
 #[derive(Clone, Debug, Error, PartialEq)]
 pub enum Error {
     #[error("{0}")]
@@ -35,21 +62,8 @@ pub enum Error {
 
     #[error("expected a string")]
     ExpectedString,
-}
 
-impl ser::Error for Error {
-    fn custom<T: fmt::Display>(msg: T) -> Self {
-        Error::Message(msg.to_string())
-    }
 }
-
-impl de::Error for Error {
-    fn custom<T: fmt::Display>(msg: T) -> Self {
-        Error::Message(msg.to_string())
-    }
-}
-
-pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub struct Deserializer<'a> {
@@ -145,19 +159,6 @@ impl<'a> Deserializer<'a> {
         } else {
             Err(Error::ExpectedBytes)
         }
-    }
-}
-
-pub fn from_nested_meta<'a, T>(meta: &'a [syn::NestedMeta]) -> Result<T>
-where
-    T: Deserialize<'a>,
-{
-    let mut deserializer = dbg!(Deserializer::new(meta));
-    let t = T::deserialize(&mut deserializer)?;
-    if deserializer.is_complete() {
-        Ok(t)
-    } else {
-        return Err(Error::TrailingItems);
     }
 }
 
