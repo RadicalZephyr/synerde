@@ -129,25 +129,25 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         visitor.visit_i8(self.parse_integer()?)
     }
 
-    fn deserialize_i16<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!("i16")
+        visitor.visit_i16(self.parse_integer()?)
     }
 
-    fn deserialize_i32<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!("i32")
+        visitor.visit_i32(self.parse_integer()?)
     }
 
-    fn deserialize_i64<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!("i64")
+        visitor.visit_i64(self.parse_integer()?)
     }
 
     fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value>
@@ -157,25 +157,25 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         visitor.visit_u8(self.parse_integer()?)
     }
 
-    fn deserialize_u16<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!("u16")
+        visitor.visit_u16(self.parse_integer()?)
     }
 
-    fn deserialize_u32<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!("u32")
+        visitor.visit_u32(self.parse_integer()?)
     }
 
-    fn deserialize_u64<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!("u64")
+        visitor.visit_u64(self.parse_integer()?)
     }
 
     fn deserialize_f32<V>(self, _visitor: V) -> Result<V::Value>
@@ -375,5 +375,11 @@ mod tests {
     fn numbers() {
         assert_eq!(10_u8, from_test_meta![10]);
         assert_eq!(-7_i8, from_test_meta![-7]);
+        assert_eq!(110_u16, from_test_meta![110]);
+        assert_eq!(-17_i16, from_test_meta![-17]);
+        assert_eq!(101_u32, from_test_meta![101]);
+        assert_eq!(-71_i32, from_test_meta![-71]);
+        assert_eq!(9101_u64, from_test_meta![9101]);
+        assert_eq!(-471_i64, from_test_meta![-471]);
     }
 }
