@@ -152,7 +152,7 @@ pub fn from_nested_meta<'a, T>(meta: &'a [syn::NestedMeta]) -> Result<T>
 where
     T: Deserialize<'a>,
 {
-    let mut deserializer = Deserializer::new(meta);
+    let mut deserializer = dbg!(Deserializer::new(meta));
     let t = T::deserialize(&mut deserializer)?;
     if deserializer.is_complete() {
         Ok(t)
@@ -459,6 +459,16 @@ mod tests {
         // TODO: fails, can this be fixed?
         // assert_meta_eq!("abcde" => &str, ["abcde"]);
         assert_meta_eq!("abcde" => String, ["abcde"]);
+    }
+
+    // Apparently this doesn't invoke any of the `deserialize_byte*`
+    // as I would have expected, but instead invokes
+    // `deserialize_seq`. This method then complains if you try to
+    // call `visit_byte*`.
+    #[ignore]
+    #[test]
+    fn bytes() {
+        assert_meta_eq!(vec![102, 111, 111] => Vec<u8>, [b"foo"]);
     }
 
     #[test]
