@@ -341,13 +341,16 @@ mod tests {
         }
     }
 
+    macro_rules! from_test_meta {
+        [$( $t:tt )*] => {{
+            let AttributeArgs(args) = syn::parse_quote![$($t)*];
+            from_nested_meta(&args).expect("failed to parse")
+        }};
+    }
+
     #[test]
     fn booleans() {
-        let AttributeArgs(args) = syn::parse_quote![true];
-        let actual: bool = from_nested_meta(&args).expect("failed to parse");
-        assert_eq!(true, actual);
-        let AttributeArgs(args) = syn::parse_quote![false];
-        let actual: bool = from_nested_meta(&args).expect("failed to parse");
-        assert_eq!(false, actual);
+        assert_eq!(true, from_test_meta![true]);
+        assert_eq!(false, from_test_meta![false]);
     }
 }
