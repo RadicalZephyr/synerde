@@ -114,7 +114,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
                 syn::Lit::Int(_) => self.deserialize_i64(visitor),
                 syn::Lit::Float(_) => self.deserialize_f64(visitor),
                 syn::Lit::Bool(_) => self.deserialize_bool(visitor),
-                syn::Lit::Verbatim(_) => todo!(),
+                syn::Lit::Verbatim(_) => todo!("verbatim literal"),
             },
         }
     }
