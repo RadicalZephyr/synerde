@@ -380,29 +380,31 @@ where
         V: de::Visitor<'de>,
     {
         if let syn::NestedMeta::Meta(syn::Meta::List(_)) = self.peek_meta()? {
-            visitor.visit_seq(SeqAccess::new(self))
+            let value = visitor.visit_seq(SeqAccess::new(self))?;
+            self.pop_next()?;
+            Ok(value)
         } else {
             Err(Error::ExpectedList)
         }
     }
 
-    fn deserialize_tuple<V>(self, _len: usize, _visitor: V) -> Result<V::Value>
+    fn deserialize_tuple<V>(self, _len: usize, visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!("tuple")
+        self.deserialize_seq(visitor)
     }
 
     fn deserialize_tuple_struct<V>(
         self,
         _name: &'static str,
         _len: usize,
-        _visitor: V,
+        visitor: V,
     ) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!("tuple_struct")
+        self.deserialize_seq(visitor)
     }
 
     fn deserialize_map<V>(self, _visitor: V) -> Result<V::Value>
@@ -473,7 +475,6 @@ impl<'de, 'a, R: Read<'de> + 'a> de::SeqAccess<'de> for SeqAccess<'a, R> {
             let nested_meta: Vec<_> = l.nested.iter().skip(self.pos).collect();
             let mut deserializer = Deserializer::vec_of_borrowed(nested_meta);
             if deserializer.is_complete() {
-                self.de.pop_next()?;
                 return Ok(None);
             }
 
@@ -575,5 +576,13 @@ mod tests {
     #[test]
     fn sequences() {
         assert_meta_eq!(vec!['a', 'b', 'c'] => Vec<char>, [foo('a', 'b', 'c')]);
+    }
+
+    #[test]
+    fn tuples() {
+        assert_meta_eq!((0, 'b', String::from("hello")) => (u8, char, String), [foo(0, 'b', "hello")]);
+        #[derive(Debug, PartialEq, serde_derive::Deserialize)]
+        struct TupleStruct(char, usize, char);
+        assert_meta_eq!(TupleStruct('z', 1, 'a') => TupleStruct, [foo('z', 1, 'a')])
     }
 }
