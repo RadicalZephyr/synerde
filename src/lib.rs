@@ -1,4 +1,4 @@
-use std::{fmt, marker::PhantomData, ops::Index, str::FromStr};
+use std::{fmt, ops::Index, str::FromStr};
 
 use serde::{de, ser, Deserialize};
 
@@ -85,33 +85,24 @@ impl<'a> IndexMeta for &'a [syn::NestedMeta] {
 }
 
 #[derive(Debug)]
-pub struct Deserializer<'a, T: Sized> {
+pub struct Deserializer<T: Sized> {
     meta: T,
     pos: usize,
-    _lifetime: PhantomData<&'a syn::NestedMeta>,
 }
 
-impl<'a> Deserializer<'a, &'a [syn::NestedMeta]> {
+impl<'a> Deserializer<&'a [syn::NestedMeta]> {
     pub fn slice_of_owned(meta: &'a [syn::NestedMeta]) -> Self {
-        Self {
-            meta,
-            pos: 0,
-            _lifetime: PhantomData,
-        }
+        Self { meta, pos: 0 }
     }
 }
 
-impl<'a> Deserializer<'a, Vec<&'a syn::NestedMeta>> {
+impl<'a> Deserializer<Vec<&'a syn::NestedMeta>> {
     pub fn vec_of_borrowed(meta: Vec<&'a syn::NestedMeta>) -> Self {
-        Self {
-            meta,
-            pos: 0,
-            _lifetime: PhantomData,
-        }
+        Self { meta, pos: 0 }
     }
 }
 
-impl<'a, T> Deserializer<'a, T>
+impl<T> Deserializer<T>
 where
     T: Len + IndexMeta,
 {
@@ -201,7 +192,7 @@ where
     }
 }
 
-impl<'de, 'a, T> de::Deserializer<'de> for &'a mut Deserializer<'de, T>
+impl<'de, 'a, T> de::Deserializer<'de> for &'a mut Deserializer<T>
 where
     T: Len + IndexMeta,
 {
