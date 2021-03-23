@@ -1,4 +1,4 @@
-use std::{fmt, str::FromStr};
+use std::{fmt, marker::PhantomData, ops::Index, str::FromStr};
 
 use serde::{de, ser, Deserialize};
 
@@ -22,7 +22,7 @@ pub fn from_nested_meta<'a, T>(meta: &'a [syn::NestedMeta]) -> Result<T>
 where
     T: Deserialize<'a>,
 {
-    let mut deserializer = dbg!(Deserializer::new(meta));
+    let mut deserializer = dbg!(Deserializer::slice_of_owned(meta));
     let t = T::deserialize(&mut deserializer)?;
     if deserializer.is_complete() {
         Ok(t)
@@ -62,27 +62,66 @@ pub enum Error {
 
     #[error("expected a string")]
     ExpectedString,
+}
 
+pub trait Len {
+    fn len_(&self) -> usize;
+}
+
+impl<'a, T> Len for &'a [T] {
+    fn len_(&self) -> usize {
+        self.len()
+    }
+}
+
+pub trait IndexMeta {
+    fn index_(&self, index: usize) -> &syn::NestedMeta;
+}
+
+impl<'a> IndexMeta for &'a [syn::NestedMeta] {
+    fn index_(&self, index: usize) -> &syn::NestedMeta {
+        self.index(index)
+    }
 }
 
 #[derive(Debug)]
-pub struct Deserializer<'a> {
-    meta: &'a [syn::NestedMeta],
+pub struct Deserializer<'a, T: Sized> {
+    meta: T,
     pos: usize,
+    _lifetime: PhantomData<&'a syn::NestedMeta>,
 }
 
-impl<'a> Deserializer<'a> {
-    pub fn new(meta: &'a [syn::NestedMeta]) -> Self {
-        Self { meta, pos: 0 }
+impl<'a> Deserializer<'a, &'a [syn::NestedMeta]> {
+    pub fn slice_of_owned(meta: &'a [syn::NestedMeta]) -> Self {
+        Self {
+            meta,
+            pos: 0,
+            _lifetime: PhantomData,
+        }
     }
+}
 
+impl<'a> Deserializer<'a, Vec<&'a syn::NestedMeta>> {
+    pub fn vec_of_borrowed(meta: Vec<&'a syn::NestedMeta>) -> Self {
+        Self {
+            meta,
+            pos: 0,
+            _lifetime: PhantomData,
+        }
+    }
+}
+
+impl<'a, T> Deserializer<'a, T>
+where
+    T: Len + IndexMeta,
+{
     fn is_complete(&self) -> bool {
-        self.meta.len() == self.pos
+        self.meta.len_() == self.pos
     }
 
     fn peek_meta(&mut self) -> Result<&syn::NestedMeta> {
-        if let Some(next_meta) = self.meta[self.pos..].first() {
-            Ok(next_meta)
+        if !self.is_complete() {
+            Ok(self.meta.index_(self.pos))
         } else {
             Err(Error::EOF)
         }
@@ -162,7 +201,10 @@ impl<'a> Deserializer<'a> {
     }
 }
 
-impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
+impl<'de, 'a, T> de::Deserializer<'de> for &'a mut Deserializer<'de, T>
+where
+    T: Len + IndexMeta,
+{
     type Error = Error;
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
