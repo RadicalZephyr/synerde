@@ -132,16 +132,15 @@ where
         }
     }
 
-    fn pop_next(&mut self) -> Result<()> {
+    fn pop_next(&mut self) {
         self.pos += 1;
-        Ok(())
     }
 
     fn parse_bool(&mut self) -> Result<bool> {
         if let syn::NestedMeta::Lit(syn::Lit::Bool(syn::LitBool { value, .. })) =
             *self.peek_meta()?
         {
-            self.pop_next()?;
+            self.pop_next();
             Ok(value)
         } else {
             Err(Error::ExpectedBoolean)
@@ -155,7 +154,7 @@ where
     {
         if let syn::NestedMeta::Lit(syn::Lit::Int(i)) = self.peek_meta()? {
             let value: N = i.base10_parse().map_err(|_| Error::ExpectedInteger)?;
-            self.pop_next()?;
+            self.pop_next();
             Ok(value)
         } else {
             Err(Error::ExpectedInteger)
@@ -169,7 +168,7 @@ where
     {
         if let syn::NestedMeta::Lit(syn::Lit::Float(f)) = self.peek_meta()? {
             let value: N = f.base10_parse().map_err(|_| Error::ExpectedFloat)?;
-            self.pop_next()?;
+            self.pop_next();
             Ok(value)
         } else {
             Err(Error::ExpectedFloat)
@@ -179,7 +178,7 @@ where
     fn parse_char(&mut self) -> Result<char> {
         if let syn::NestedMeta::Lit(syn::Lit::Char(c)) = self.peek_meta()? {
             let value = c.value();
-            self.pop_next()?;
+            self.pop_next();
             Ok(value)
         } else {
             Err(Error::ExpectedChar)
@@ -189,7 +188,7 @@ where
     fn parse_string(&mut self) -> Result<String> {
         if let syn::NestedMeta::Lit(syn::Lit::Str(s)) = self.peek_meta()? {
             let value = s.value();
-            self.pop_next()?;
+            self.pop_next();
             Ok(value)
         } else {
             Err(Error::ExpectedString)
@@ -381,7 +380,7 @@ where
     {
         if let syn::NestedMeta::Meta(syn::Meta::List(_)) = self.peek_meta()? {
             let value = visitor.visit_seq(SeqAccess::new(self))?;
-            self.pop_next()?;
+            self.pop_next();
             Ok(value)
         } else {
             Err(Error::ExpectedList)
