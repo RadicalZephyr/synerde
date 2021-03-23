@@ -431,6 +431,31 @@ where
     }
 }
 
+struct SeqAccess<'a, R: 'a> {
+    de: &'a mut Deserializer<R>,
+}
+
+impl<'a, R: 'a> SeqAccess<'a, R> {
+    fn new(de: &'a mut Deserializer<R>) -> Self {
+        SeqAccess { de }
+    }
+}
+
+impl<'de, 'a, R: Read<'de> + 'a> de::SeqAccess<'de> for SeqAccess<'a, R> {
+    type Error = Error;
+
+    fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>>
+    where
+        T: de::DeserializeSeed<'de>,
+    {
+        if !self.de.is_complete() {
+            Err(Error::EOF)
+        } else {
+            Ok(None)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
