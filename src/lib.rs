@@ -62,6 +62,9 @@ pub enum Error {
 
     #[error("expected a string")]
     ExpectedString,
+
+    #[error("expected a list")]
+    ExpectedList,
 }
 
 pub trait Read<'de> {
@@ -70,6 +73,19 @@ pub trait Read<'de> {
 }
 
 impl<'de, 'a> Read<'de> for &'a [syn::NestedMeta]
+where
+    'a: 'de,
+{
+    fn len_(&self) -> usize {
+        self.len()
+    }
+
+    fn index_(&self, index: usize) -> &'de syn::NestedMeta {
+        &*self.index(index)
+    }
+}
+
+impl<'de, 'a> Read<'de> for Vec<&'a syn::NestedMeta>
 where
     'a: 'de,
 {
@@ -105,7 +121,7 @@ where
     R: Read<'de>,
 {
     fn is_complete(&self) -> bool {
-        self.meta.len_() == self.pos
+        self.meta.len_() <= self.pos
     }
 
     fn peek_meta(&mut self) -> Result<&'de syn::NestedMeta> {
@@ -359,11 +375,15 @@ where
         visitor.visit_newtype_struct(self)
     }
 
-    fn deserialize_seq<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        todo!("seq")
+        if let syn::NestedMeta::Meta(syn::Meta::List(_)) = self.peek_meta()? {
+            visitor.visit_seq(SeqAccess::new(self))
+        } else {
+            Err(Error::ExpectedList)
+        }
     }
 
     fn deserialize_tuple<V>(self, _len: usize, _visitor: V) -> Result<V::Value>
@@ -433,11 +453,12 @@ where
 
 struct SeqAccess<'a, R: 'a> {
     de: &'a mut Deserializer<R>,
+    pos: usize,
 }
 
 impl<'a, R: 'a> SeqAccess<'a, R> {
     fn new(de: &'a mut Deserializer<R>) -> Self {
-        SeqAccess { de }
+        SeqAccess { de, pos: 0 }
     }
 }
 
@@ -448,10 +469,19 @@ impl<'de, 'a, R: Read<'de> + 'a> de::SeqAccess<'de> for SeqAccess<'a, R> {
     where
         T: de::DeserializeSeed<'de>,
     {
-        if !self.de.is_complete() {
-            Err(Error::EOF)
+        if let syn::NestedMeta::Meta(syn::Meta::List(l)) = self.de.peek_meta()? {
+            let nested_meta: Vec<_> = l.nested.iter().skip(self.pos).collect();
+            let mut deserializer = Deserializer::vec_of_borrowed(nested_meta);
+            if deserializer.is_complete() {
+                self.de.pop_next()?;
+                return Ok(None);
+            }
+
+            let t = seed.deserialize(&mut deserializer)?;
+            self.pos += deserializer.pos;
+            Ok(Some(t))
         } else {
-            Ok(None)
+            Err(Error::ExpectedList)
         }
     }
 }
@@ -540,5 +570,10 @@ mod tests {
     #[test]
     fn unit() {
         assert_meta_eq!(() => (), [()]);
+    }
+
+    #[test]
+    fn sequences() {
+        assert_meta_eq!(vec!['a', 'b', 'c'] => Vec<char>, [foo('a', 'b', 'c')]);
     }
 }
