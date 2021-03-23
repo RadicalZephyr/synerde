@@ -64,29 +64,27 @@ pub enum Error {
     ExpectedString,
 }
 
-pub trait Len {
+pub trait Read<'de> {
     fn len_(&self) -> usize;
+    fn index_(&self, index: usize) -> &'de syn::NestedMeta;
 }
 
-impl<'a, T> Len for &'a [T] {
+impl<'de, 'a> Read<'de> for &'a [syn::NestedMeta]
+where
+    'a: 'de,
+{
     fn len_(&self) -> usize {
         self.len()
     }
-}
 
-pub trait IndexMeta {
-    fn index_(&self, index: usize) -> &syn::NestedMeta;
-}
-
-impl<'a> IndexMeta for &'a [syn::NestedMeta] {
-    fn index_(&self, index: usize) -> &syn::NestedMeta {
-        self.index(index)
+    fn index_(&self, index: usize) -> &'de syn::NestedMeta {
+        &*self.index(index)
     }
 }
 
 #[derive(Debug)]
-pub struct Deserializer<T: Sized> {
-    meta: T,
+pub struct Deserializer<R> {
+    meta: R,
     pos: usize,
 }
 
@@ -102,15 +100,15 @@ impl<'a> Deserializer<Vec<&'a syn::NestedMeta>> {
     }
 }
 
-impl<T> Deserializer<T>
+impl<'de, R> Deserializer<R>
 where
-    T: Len + IndexMeta,
+    R: Read<'de>,
 {
     fn is_complete(&self) -> bool {
         self.meta.len_() == self.pos
     }
 
-    fn peek_meta(&mut self) -> Result<&syn::NestedMeta> {
+    fn peek_meta(&mut self) -> Result<&'de syn::NestedMeta> {
         if !self.is_complete() {
             Ok(self.meta.index_(self.pos))
         } else {
@@ -192,9 +190,9 @@ where
     }
 }
 
-impl<'de, 'a, T> de::Deserializer<'de> for &'a mut Deserializer<T>
+impl<'de, 'a, R> de::Deserializer<'de> for &'a mut Deserializer<R>
 where
-    T: Len + IndexMeta,
+    R: Read<'de>,
 {
     type Error = Error;
 
